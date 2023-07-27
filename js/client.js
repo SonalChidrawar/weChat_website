@@ -1,3 +1,4 @@
+// Initialized socket connection to the server
 const socket = io("http://localhost:8000");
 
 // Get DOM variables in respective js variables
@@ -5,19 +6,19 @@ const form = document.getElementById("send-container");
 const messageInput = document.getElementById("messageInp");
 const messageContainer = document.querySelector(".container");
 
-// audio that will play on receiving messages
+// Audio element for message notification sound
 var audio = new Audio("ring.mp3");
 
-// function that appends event info to the container
+// Function that appends messages to the chat container
 const append = (message, position) => {
   const messageElement = document.createElement("div");
-  const timestampElement = document.createElement("span"); // Create a new element for the timestamp
+  const timestampElement = document.createElement("span");
   timestampElement.innerText = getCurrentTime();
-  timestampElement.classList.add("timestamp"); // Add a CSS class to the timestamp element
+  timestampElement.classList.add("timestamp");
   messageElement.innerText = message;
   messageElement.classList.add("message");
   messageElement.classList.add(position);
-  messageElement.prepend(timestampElement); // Prepend the timestamp element to the message element
+  messageElement.prepend(timestampElement);
   messageContainer.append(messageElement);
   if (position == "left") {
     audio.play();
@@ -33,19 +34,19 @@ const getCurrentTime = () => {
   return timestamp;
 };
 
-// ask user Name  anad let the server know
+// Ask user for their username and let the server know
 let userName = prompt("Enter your userName to join");
 while (!userName || userName.trim() === "") {
   userName = prompt("Invalid userName. Please enter a valid userName to join");
 }
 socket.emit("new-user-joined", userName);
 
-// if the new user joins, receive their user Name  from the server
+// Listen for new user join event from the server
 socket.on("user-joined", (userName) => {
   append(`${userName} joined the chat`, "right");
 });
 
-// if server sends a message, receive it
+// Listen for received messages from the server
 socket.on("receive", (data) => {
   const secretKey =
     "66d77461b5ea7beb22e2b085331d619f11243a0306414fa837421d156c89af93";
@@ -57,31 +58,32 @@ socket.on("receive", (data) => {
   append(`${data.userName}: ${decryptedMessage}`, "left");
 });
 
-// if a user leaves the chat, append the info to the container
+// Listen for user leave event from the server & append the info to the container
 socket.on("left", (userName) => {
   append(`${userName} left`, "right");
 });
 
+// Retrieve chat history from local storage
 const chatHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
 
-// display chat history on joining
+// Display chat history on joining
 chatHistory.forEach((message) => {
   append(message, "left");
 });
 
-// function to delete the chat
+// Function to delete the chat
 const deleteChat = () => {
   messageContainer.innerHTML = ""; // Clear the chat container
   localStorage.removeItem("chatHistory"); // Remove chat history from local storage
 };
 
-// listen for the delete chat button click event
+// Listen for the delete chat button click event
 const deleteChatBtn = document.getElementById("bin");
 deleteChatBtn.addEventListener("click", deleteChat);
 
-// if form gets submitted, send server the message
+// If form gets submitted, send the message to the server
 form.addEventListener("submit", (e) => {
-  e.preventDefault(); //does not reload page
+  e.preventDefault(); // No page reload
   const message = messageInput.value.trim();
   if (message !== "") {
     const secretKey =
@@ -97,6 +99,6 @@ form.addEventListener("submit", (e) => {
     chatHistory.push(message);
     localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
 
-    messageInput.value = "";
+    messageInput.value = ""; // Clear the input field after sending the message
   }
 });
